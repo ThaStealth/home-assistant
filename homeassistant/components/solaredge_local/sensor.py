@@ -52,7 +52,7 @@ SENSOR_TYPES = {
     "inverter_status": ["inverterStatus", "Inverter status", '', ""],
     "inverter_voltage": ["inverterVoltage", "Inverter voltage", POWER_WATT, "mdi:current-dc"],
     "inverter_temperature": ["inverterTemperature", "Inverter temperature", TEMP_CELSIUS , "mdi:thermometer"],
-    "optimizer_status": ["optimizerStatus", "Optimizer status", '', ""],
+    "optimizer_status": ["optimizerStatus", "Optimizer status", 'online', ""],
     "grid_frequency": ["gridFrequency", "Grid frequency", 'Hz', "mdi:current-ac"],
     "grid_voltage": ["gridVoltage", "Grid voltage", 'V', "mdi:power-plug"],    
 }
