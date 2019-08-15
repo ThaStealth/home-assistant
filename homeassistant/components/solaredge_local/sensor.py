@@ -13,7 +13,7 @@ import voluptuous as vol
 
 
 from homeassistant.components.sensor import PLATFORM_SCHEMA
-from homeassistant.const import CONF_IP_ADDRESS, CONF_NAME, POWER_WATT, ENERGY_WATT_HOUR
+from homeassistant.const import CONF_IP_ADDRESS, CONF_NAME, POWER_WATT, ENERGY_WATT_HOUR, TEMP_CELSIUS 
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import Entity
 from homeassistant.util import Throttle
@@ -49,6 +49,12 @@ SENSOR_TYPES = {
         "mdi:solar-power",
     ],
     "current_power": ["currentPower", "Current Power", POWER_WATT, "mdi:solar-power"],
+    "inverter_status": ["inverterStatus", "Inverter status", '', ""],
+    "inverter_voltage": ["inverterVoltage", "Inverter voltage", POWER_WATT, "mdi:current-dc"],
+    "inverter_temperature": ["inverterTemperature", "Inverter temperature", TEMP_CELSIUS , "mdi:thermometer"],
+    "optimizer_status": ["optimizerStatus", "Optimizer status", '', ""],
+    "grid_frequency": ["gridFrequency", "Grid frequency", 'Hz', "mdi:current-ac"],
+    "grid_voltage": ["gridVoltage", "Grid voltage", 'V', "mdi:power-plug"],    
 }
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
@@ -143,6 +149,21 @@ class SolarEdgeData:
         self.api = api
         self.data = {}
 
+    def getStatusText(self,value):        
+      return {
+          0: 'Shutdown',
+          1: 'Error',
+          2: 'Standby',
+          3: 'Pairing',
+          4: 'Production',
+          5: 'AC Charging',
+          6: 'Not paired',
+          7: 'Nightmode',
+          8: 'Grid monitoring',
+          9: 'IDLE',
+      }.get(value, 'unknown')
+
+
     @Throttle(UPDATE_DELAY)
     def update(self):
         """Update the data from the SolarEdge Monitoring API."""
@@ -163,6 +184,14 @@ class SolarEdgeData:
             self.data["energyThisMonth"] = response.energy.thisMonth
             self.data["energyToday"] = response.energy.today
             self.data["currentPower"] = response.powerWatt
+            self.data["inverterVoltage"] = response.inverters.primary.voltage
+            self.data["inverterTemperature"] = response.inverters.primary.temperature.value
+            self.data["optimizerStatus"] = str(response.optimizersStatus.online) + '/'+ str(response.optimizersStatus.total)
+            self.data["gridFrequency"] = response.frequencyHz
+            self.data["gridVoltage"] = response.voltage          
+            
+            self.data["inverterStatus"] = self.getStatusText(response.status)
+            
             _LOGGER.debug("Updated SolarEdge overview data: %s", self.data)
         except AttributeError:
             _LOGGER.error("Missing details data in SolarEdge response")
