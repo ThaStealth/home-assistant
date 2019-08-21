@@ -147,7 +147,7 @@ class SolarEdgeOptimizerSensor(Entity):
         self._state = len(self.data.optimizerData)
         self._attributes = {}
         for optimizer in self.data.optimizerData:
-           self._attributes[optimizer.serial] = optimizer
+           self._attributes[optimizer["serial"]] = optimizer
         
     
 class SolarEdgeSensor(Entity):
