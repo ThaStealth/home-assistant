@@ -119,7 +119,7 @@ class SolarEdgeOptimizerSensor(Entity):
     @property
     def name(self):
         """Return the name."""
-        return "{} ({})".format(self.platform_name, SENSOR_TYPES[self.sensor_key][1])
+        return None
 
     @property
     def unit_of_measurement(self):
