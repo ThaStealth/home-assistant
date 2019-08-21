@@ -112,7 +112,8 @@ class SolarEdgeOptimizerSensor(Entity):
         self.platform_name = platform_name
         self.sensor_key = sensor_key
         self.data = data
-        self._state = None        
+        self._state = None    
+        self._attributes = None
         self._unit_of_measurement = SENSOR_TYPES[self.sensor_key][2]
 
     @property
@@ -144,7 +145,9 @@ class SolarEdgeOptimizerSensor(Entity):
         """Get the latest data from the sensor and update the state."""
         self.data.updateOptimizers()
         self._state = len(self.data.optimizerData)
-        self._attributes = self.data.optimizerData
+        self._attributes = {}
+        for optimizer in self.data.optimizerData:
+           self._attributes[optimizer.serial] = optimizer
         
     
 class SolarEdgeSensor(Entity):
