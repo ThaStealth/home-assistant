@@ -124,12 +124,12 @@ class SolarEdgeOptimizerSensor(Entity):
     @property
     def unit_of_measurement(self):
         """Return the unit of measurement."""
-        return self._unit_of_measurement
+        return None
 
     @property
     def icon(self):
         """Return the sensor icon."""
-        return SENSOR_TYPES[self.sensor_key][3]
+        return None
 
     @property
     def state(self):
