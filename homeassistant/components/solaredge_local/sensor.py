@@ -5,7 +5,7 @@ For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/sensor.solaredge_local/
 """
 import logging
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from requests.exceptions import HTTPError, ConnectTimeout
 from solaredge_local import SolarEdge
@@ -96,12 +96,57 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     # Create a new sensor for each sensor type.
     entities = []
     for sensor_key in SENSOR_TYPES:
-        sensor = SolarEdgeSensor(platform_name, sensor_key, data)
+        if(sensor_key != 'optimizerStatus'):
+            sensor = SolarEdgeSensor(platform_name, sensor_key, data)
+        else:            
+            sensor = SolarEdgeOptimizerSensor(platform_name, sensor_key, data)
         entities.append(sensor)
 
     add_entities(entities, True)
 
+class SolarEdgeOptimizerSensor(Entity):
+    """Representation of an SolarEdge Monitoring API sensor."""
 
+    def __init__(self, platform_name, sensor_key, data):
+        """Initialize the sensor."""
+        self.platform_name = platform_name
+        self.sensor_key = sensor_key
+        self.data = data
+        self._state = None        
+        self._unit_of_measurement = SENSOR_TYPES[self.sensor_key][2]
+
+    @property
+    def name(self):
+        """Return the name."""
+        return "{} ({})".format(self.platform_name, SENSOR_TYPES[self.sensor_key][1])
+
+    @property
+    def unit_of_measurement(self):
+        """Return the unit of measurement."""
+        return self._unit_of_measurement
+
+    @property
+    def icon(self):
+        """Return the sensor icon."""
+        return SENSOR_TYPES[self.sensor_key][3]
+
+    @property
+    def state(self):
+        """Return the state of the sensor."""
+        return self._state
+    
+    @property
+    def device_state_attributes(self):
+        """Return device specific state attributes."""
+        return self._attributes         
+
+    def update(self):
+        """Get the latest data from the sensor and update the state."""
+        self.data.updateOptimizers()
+        self._state = len(self.data.optimizerData)
+        self._attributes = self.data.optimizerData
+        
+    
 class SolarEdgeSensor(Entity):
     """Representation of an SolarEdge Monitoring API sensor."""
 
@@ -149,6 +194,7 @@ class SolarEdgeData:
         self.hass = hass
         self.api = api
         self.data = {}
+        self.optimizerData = []
 
     def getStatusText(self,value):        
       return {
@@ -171,8 +217,6 @@ class SolarEdgeData:
         try:
             response = self.api.get_status()
             _LOGGER.debug("response from SolarEdge: %s", response) 
-            optimizersResponse = self.api.get_optimizers()
-            _LOGGER.debug("response from SolarEdge: %s", optimizersResponse) 
         except (ConnectTimeout):
             _LOGGER.error("Connection timeout, skipping update")
             return        
@@ -197,19 +241,31 @@ class SolarEdgeData:
             _LOGGER.debug("Updated SolarEdge overview data: %s", self.data)
         except AttributeError:
             _LOGGER.error("Missing details data in SolarEdge response")
-            
+
+    @Throttle(UPDATE_DELAY)
+    def updateOptimizers(self):      
+        """Update the data from the SolarEdge Monitoring API."""
+        try:
+            optimizersResponse = self.api.get_optimizers()
+            _LOGGER.debug("response from SolarEdge: %s", optimizersResponse) 
+        except (ConnectTimeout):
+            _LOGGER.error("Connection timeout, skipping update")
+            return        
+        except (HTTPError):
+            _LOGGER.error("Could not retrieve data, skipping update")
+            return        
         try:       
-            self.data["optimizerData"] = []
+            self.optimizerData = []
             for optimizer in optimizersResponse.diagnostics.inverters.primary.optimizer:
                 currentOptimizer={}
                 currentOptimizer["serial"] = optimizer.serialNumber
-                currentOptimizer["inputC"] = datetime(optimizer.lastReport.year, optimizer.lastReport.month, optimizer.lastReport.day, optimizer.lastReport.hour, optimizer.lastReport.minute, optimizer.lastReport.second))
+                currentOptimizer["inputC"] = datetime(optimizer.lastReport.year, optimizer.lastReport.month, optimizer.lastReport.day, optimizer.lastReport.hour, optimizer.lastReport.minute, optimizer.lastReport.second)
                 currentOptimizer["outputV"] = optimizer.outputV
                 currentOptimizer["inputV"] = optimizer.inputV
                 currentOptimizer["inputC"] = optimizer.inputC
                 currentOptimizer["inputW"] = optimizer.inputV* optimizer.inputC
                 currentOptimizer["temperature"] = optimizer.temperature.value
-                self.data["optimizerData"].append(currentOptimizer)            
-            _LOGGER.debug("Updated SolarEdge overview data: %s", self.data.optimizerData)
+                self.optimizerData.append(currentOptimizer)            
+            _LOGGER.debug("Updated SolarEdge overview data: %s", self.optimizerData)
         except AttributeError:
             _LOGGER.error("Missing details data in SolarEdge response")            
