@@ -55,6 +55,7 @@ SENSOR_TYPES = {
     "optimizer_status": ["optimizerStatus", "Optimizer status", 'online', ""],
     "grid_frequency": ["gridFrequency", "Grid frequency", 'Hz', "mdi:current-ac"],
     "grid_voltage": ["gridVoltage", "Grid voltage", 'V', "mdi:power-plug"],    
+    "optimizerStatus": ["optimizerData", "Optimizers", '', ""],    
 }
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
@@ -170,6 +171,8 @@ class SolarEdgeData:
         try:
             response = self.api.get_status()
             _LOGGER.debug("response from SolarEdge: %s", response) 
+            optimizersResponse = self.api.get_optimizers()
+            _LOGGER.debug("response from SolarEdge: %s", optimizersResponse) 
         except (ConnectTimeout):
             _LOGGER.error("Connection timeout, skipping update")
             return        
@@ -177,7 +180,6 @@ class SolarEdgeData:
             _LOGGER.error("Could not retrieve data, skipping update")
             return
         
-        """Processing the fetched data."""
         try:       
             self.data["energyTotal"] = response.energy.total
             self.data["energyThisYear"] = response.energy.thisYear
@@ -195,3 +197,19 @@ class SolarEdgeData:
             _LOGGER.debug("Updated SolarEdge overview data: %s", self.data)
         except AttributeError:
             _LOGGER.error("Missing details data in SolarEdge response")
+            
+        try:       
+            self.data["optimizerData"] = []
+            for optimizer in optimizersResponse.diagnostics.inverters.primary.optimizer:
+                currentOptimizer={}
+                currentOptimizer["serial"] = optimizer.serialNumber
+                currentOptimizer["inputC"] = datetime(optimizer.lastReport.year, optimizer.lastReport.month, optimizer.lastReport.day, optimizer.lastReport.hour, optimizer.lastReport.minute, optimizer.lastReport.second))
+                currentOptimizer["outputV"] = optimizer.outputV
+                currentOptimizer["inputV"] = optimizer.inputV
+                currentOptimizer["inputC"] = optimizer.inputC
+                currentOptimizer["inputW"] = optimizer.inputV* optimizer.inputC
+                currentOptimizer["temperature"] = optimizer.temperature.value
+                self.data["optimizerData"].append(currentOptimizer)            
+            _LOGGER.debug("Updated SolarEdge overview data: %s", self.data.optimizerData)
+        except AttributeError:
+            _LOGGER.error("Missing details data in SolarEdge response")            
