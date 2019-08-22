@@ -50,7 +50,7 @@ SENSOR_TYPES = {
     ],
     "current_power": ["currentPower", "Current Power", POWER_WATT, "mdi:solar-power"],
     "inverter_status": ["inverterStatus", "Inverter status", '', ""],
-    "inverter_voltage": ["inverterVoltage", "Inverter voltage", V, "mdi:current-dc"],
+    "inverter_voltage": ["inverterVoltage", "Inverter voltage", 'V', "mdi:current-dc"],
     "inverter_temperature": ["inverterTemperature", "Inverter temperature", TEMP_CELSIUS , "mdi:thermometer"],
     "optimizer_status": ["optimizerStatus", "Optimizer status", 'online', ""],
     "grid_frequency": ["gridFrequency", "Grid frequency", 'Hz', "mdi:current-ac"],
@@ -199,7 +199,7 @@ class SolarEdgeData:
         self.data = {}
         self.optimizerData = []
 
-    def getStatusText(self,value):        
+    def getStatusText(self,value):
       return {
           0: 'Shutdown',
           1: 'Error',
@@ -222,12 +222,12 @@ class SolarEdgeData:
             _LOGGER.debug("response from SolarEdge: %s", response) 
         except (ConnectTimeout):
             _LOGGER.error("Connection timeout, skipping update")
-            return        
+            return
         except (HTTPError):
             _LOGGER.error("Could not retrieve data, skipping update")
             return
-        
-        try:       
+
+        try:
             self.data["energyTotal"] = response.energy.total
             self.data["energyThisYear"] = response.energy.thisYear
             self.data["energyThisMonth"] = response.energy.thisMonth
@@ -237,7 +237,7 @@ class SolarEdgeData:
             self.data["inverterTemperature"] = response.inverters.primary.temperature.value
             self.data["optimizerStatus"] = str(response.optimizersStatus.online) + '/'+ str(response.optimizersStatus.total)
             self.data["gridFrequency"] = round(response.frequencyHz,2)
-            self.data["gridVoltage"] = response.voltage          
+            self.data["gridVoltage"] = round(response.voltage,2)
             
             self.data["inverterStatus"] = self.getStatusText(response.status)
             
@@ -246,18 +246,18 @@ class SolarEdgeData:
             _LOGGER.error("Missing details data in SolarEdge response")
 
     @Throttle(UPDATE_DELAY)
-    def updateOptimizers(self):      
+    def updateOptimizers(self):
         """Update the data from the SolarEdge Monitoring API."""
         try:
             optimizersResponse = self.api.get_optimizers()
-            _LOGGER.debug("response from SolarEdge: %s", optimizersResponse) 
+            _LOGGER.debug("response from SolarEdge: %s", optimizersResponse)
         except (ConnectTimeout):
             _LOGGER.error("Connection timeout, skipping update")
-            return        
+            return
         except (HTTPError):
             _LOGGER.error("Could not retrieve data, skipping update")
-            return        
-        try:       
+            return
+        try:
             self.optimizerData = []
             for optimizer in optimizersResponse.diagnostics.inverters.primary.optimizer:
                 currentOptimizer={}
@@ -271,4 +271,4 @@ class SolarEdgeData:
                 self.optimizerData.append(currentOptimizer)            
             _LOGGER.debug("Updated SolarEdge overview data: %s", self.optimizerData)
         except AttributeError:
-            _LOGGER.error("Missing details data in SolarEdge response")            
+            _LOGGER.error("Missing details data in SolarEdge response")
