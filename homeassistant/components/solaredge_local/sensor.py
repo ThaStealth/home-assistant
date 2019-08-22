@@ -50,7 +50,7 @@ SENSOR_TYPES = {
     ],
     "current_power": ["currentPower", "Current Power", POWER_WATT, "mdi:solar-power"],
     "inverter_status": ["inverterStatus", "Inverter status", '', ""],
-    "inverter_voltage": ["inverterVoltage", "Inverter voltage", POWER_WATT, "mdi:current-dc"],
+    "inverter_voltage": ["inverterVoltage", "Inverter voltage", V, "mdi:current-dc"],
     "inverter_temperature": ["inverterTemperature", "Inverter temperature", TEMP_CELSIUS , "mdi:thermometer"],
     "optimizer_status": ["optimizerStatus", "Optimizer status", 'online', ""],
     "grid_frequency": ["gridFrequency", "Grid frequency", 'Hz', "mdi:current-ac"],
@@ -233,10 +233,10 @@ class SolarEdgeData:
             self.data["energyThisMonth"] = response.energy.thisMonth
             self.data["energyToday"] = response.energy.today
             self.data["currentPower"] = response.powerWatt
-            self.data["inverterVoltage"] = response.inverters.primary.voltage
+            self.data["inverterVoltage"] = round(response.inverters.primary.voltage,2)
             self.data["inverterTemperature"] = response.inverters.primary.temperature.value
             self.data["optimizerStatus"] = str(response.optimizersStatus.online) + '/'+ str(response.optimizersStatus.total)
-            self.data["gridFrequency"] = response.frequencyHz
+            self.data["gridFrequency"] = round(response.frequencyHz,2)
             self.data["gridVoltage"] = response.voltage          
             
             self.data["inverterStatus"] = self.getStatusText(response.status)
